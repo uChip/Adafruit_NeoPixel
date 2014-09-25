@@ -34,7 +34,7 @@
 #include "Adafruit_NeoPixel.h"
 
 Adafruit_NeoPixel::Adafruit_NeoPixel(uint16_t n, uint8_t p, uint8_t t) : numLEDs(n), numBytes(n * 3), pin(p), pixels(NULL)
-  ,type(t)
+  ,type(t), brightness(0), endTime(0)
 #ifdef __AVR__
   ,port(portOutputRegister(digitalPinToPort(p))),
    pinMask(digitalPinToBitMask(p))
@@ -79,7 +79,7 @@ void Adafruit_NeoPixel::show(void) {
   // subsequent round of data until the latch time has elapsed.  This
   // allows the mainline code to start generating the next frame of data
   // rather than stalling for the latch.
-  while((micros() - endTime) < 50L);
+  while(!canShow());
   // endTime is a private member (rather than global var) so that mutliple
   // instances on different pins can be quickly issued in succession (each
   // instance doesn't delay the next).
@@ -859,15 +859,24 @@ uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
 
 // Query color from previously-set pixel (returns packed 32-bit RGB value)
 uint32_t Adafruit_NeoPixel::getPixelColor(uint16_t n) const {
-
-  if(n < numLEDs) {
-    uint8_t *p = &pixels[n * 3];
-    return ((uint32_t)p[rOffset] << 16) |
-           ((uint32_t)p[gOffset] <<  8) |
-            (uint32_t)p[bOffset];
+  if(n >= numLEDs) {
+    // Out of bounds, return no color.
+    return 0;
   }
-
-  return 0; // Pixel # is out of bounds
+  uint8_t *p = &pixels[n * 3];
+  uint32_t c = ((uint32_t)p[rOffset] << 16) |
+               ((uint32_t)p[gOffset] <<  8) |
+                (uint32_t)p[bOffset];
+  // Adjust this back up to the true color, as setting a pixel color will
+  // scale it back down again.
+  if(brightness) { // See notes in setBrightness()
+    //Cast the color to a byte array
+    uint8_t * c_ptr =reinterpret_cast<uint8_t*>(&c);
+    c_ptr[0] = (c_ptr[0] << 8)/brightness;
+    c_ptr[1] = (c_ptr[1] << 8)/brightness;
+    c_ptr[2] = (c_ptr[2] << 8)/brightness;
+  }
+  return c; // Pixel # is out of bounds
 }
 
 // Returns pointer to pixels[] array.  Pixel data is stored in device-
@@ -916,4 +925,13 @@ void Adafruit_NeoPixel::setBrightness(uint8_t b) {
     }
     brightness = newBrightness;
   }
+}
+
+//Return the brightness value
+uint8_t Adafruit_NeoPixel::getBrightness(void) const {
+  return brightness - 1;
+}
+
+void Adafruit_NeoPixel::clear() {
+  memset(pixels, 0, numBytes);
 }

@@ -55,15 +55,19 @@ class Adafruit_NeoPixel {
     setPin(uint8_t p),
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b),
     setPixelColor(uint16_t n, uint32_t c),
-    setBrightness(uint8_t);
+    setBrightness(uint8_t),
+    clear();
   uint8_t
-   *getPixels(void) const;
+   *getPixels(void) const,
+    getBrightness(void) const;
   uint16_t
     numPixels(void) const;
   static uint32_t
     Color(uint8_t r, uint8_t g, uint8_t b);
   uint32_t
     getPixelColor(uint16_t n) const;
+  inline bool
+    canShow(void) { return (micros() - endTime) >= 50L; }
 
  private:
 
