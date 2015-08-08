@@ -30,6 +30,7 @@
 #define NEO_RGB     0x00 // Wired for RGB data order
 #define NEO_GRB     0x01 // Wired for GRB data order
 #define NEO_BRG     0x04
+#define NEO_RBG     0x08 
   
 #define NEO_COLMASK 0x01
 #define NEO_KHZ800  0x02 // 800 KHz datastream
@@ -47,6 +48,7 @@ class Adafruit_NeoPixel {
 
   // Constructor: number of LEDs, pin number, LED type
   Adafruit_NeoPixel(uint16_t n, uint8_t p=6, uint8_t t=NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel(void);
   ~Adafruit_NeoPixel();
 
   void
@@ -56,7 +58,9 @@ class Adafruit_NeoPixel {
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b),
     setPixelColor(uint16_t n, uint32_t c),
     setBrightness(uint8_t),
-    clear();
+    clear(),
+    updateLength(uint16_t n),
+    updateType(uint8_t t);
   uint8_t
    *getPixels(void) const,
     getBrightness(void) const;
@@ -71,22 +75,24 @@ class Adafruit_NeoPixel {
 
  private:
 
-  const uint16_t
+  boolean
+    begun;         // true if begin() previously called
+  uint16_t
     numLEDs,       // Number of RGB LEDs in strip
     numBytes;      // Size of 'pixels' buffer below
+  int8_t
+    pin;           // Output pin number (-1 if not yet set)
   uint8_t
-    pin,           // Output pin number
+    type,          // Pixel flags (400 vs 800 KHz, RGB vs GRB color)
     brightness,
    *pixels,        // Holds LED color values (3 bytes each)
     rOffset,       // Index of red byte within each 3-byte pixel
     gOffset,       // Index of green byte
     bOffset;       // Index of blue byte
-  const uint8_t
-    type;          // Pixel flags (400 vs 800 KHz, RGB vs GRB color)
   uint32_t
     endTime;       // Latch timing reference
 #ifdef __AVR__
-  const volatile uint8_t
+  volatile uint8_t
     *port;         // Output PORT register
   uint8_t
     pinMask;       // Output PORT bitmask
